@@ -15,4 +15,4 @@ Build and run:
   
 See dotnet for further details.
 
-Provides a simple ConsoleReader and Shell class that tries to provide some functionality of the PowerShell cmdline, e.g. Tab completion for arguments and files and the history.
+Provides a simple ConsoleReader and Shell class that tries to provide some functionality of the PowerShell cmdline, e.g. Tab completion and command history.
