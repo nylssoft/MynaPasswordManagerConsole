@@ -7,7 +7,7 @@ Use dotnet core 2.1.
 
 Build and run:
 
->cd <projectdirectory>
+>cd <!project directory!>
 
 >dotnet build
 
