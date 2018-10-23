@@ -7,11 +7,12 @@ Use dotnet core 2.1.
 
 Build and run:
 
-cd <projectdirectory>
-dotnet build
-dotnet run
+>cd <projectdirectory>
+
+>dotnet build
+
+>dotnet run
   
 See dotnet for further details.
 
-
-
+Provides a simple ConsoleReader and Shell class that tries to provide some functionality of the PowerShell cmdline, e.g. Tab completion for arguments and files and the history.
