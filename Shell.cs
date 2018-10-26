@@ -123,6 +123,11 @@ namespace PasswordManagerConsole
                     dirName = fileName;
                     if (!fileName.EndsWith(Path.DirectorySeparatorChar))
                     {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                            && fileName.EndsWith("/"))
+                        {
+                            dirName = dirName.Substring(0, dirName.Length - 1);
+                        }
                         dirName += Path.DirectorySeparatorChar;
                     }
                     dirPrefix = dirName;
@@ -130,6 +135,10 @@ namespace PasswordManagerConsole
                 else if (!File.Exists(fileName))
                 {
                     var idx = fileName.LastIndexOf(Path.DirectorySeparatorChar);
+                    if (idx < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        idx = fileName.LastIndexOf("/");
+                    }
                     if (idx >= 0)
                     {
                         var d = fileName.Substring(0, idx + 1);
