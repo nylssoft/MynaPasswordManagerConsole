@@ -45,6 +45,7 @@ namespace PasswordManagerConsole
             "Edit-Repository",
             "Save-Repository",
             "Close-Repository",
+            "Change-MasterPassword",
             "Clear-Console",
             "Exit-Console",
             "Show-Help",
@@ -246,6 +247,9 @@ namespace PasswordManagerConsole
                     case "close-repository":
                         CloseRepositoryCommand(parseResult);
                         break;
+                    case "change-masterpassword":
+                        ChangeMasterPasswordCommand(parseResult);
+                        break;
                     case "list-account":
                         ListAccountCommand(parseResult);
                         break;
@@ -290,7 +294,8 @@ namespace PasswordManagerConsole
 
         private void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console");
+            Console.WriteLine("Myna Password Manager Console version 1.0.0 for .NET Core");
+            Console.WriteLine("Copyright (c) 2018 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
             Console.WriteLine("  Add-Account                       - Adds an account.");
@@ -305,6 +310,7 @@ namespace PasswordManagerConsole
             Console.WriteLine("  Edit-Repository                   - Edits password repository information.");
             Console.WriteLine("  Close-Repository                  - Closes the password repository.");
             Console.WriteLine("  Save-Repository                   - Saves the password repository.");
+            Console.WriteLine("  Change-MasterPassword             - Changes the repository's master password.");
             Console.WriteLine("  Clear-Console                     - Clears the console.");
             Console.WriteLine("  Exit-Console                      - Exits the program.");
             Console.WriteLine("  Show-Help                         - Displays this text.");
@@ -314,7 +320,6 @@ namespace PasswordManagerConsole
         private void ShowLicenseCommand()
         {
             Console.WriteLine("Myna Password Manager Console");
-            Console.WriteLine("Copyright (C) 2018 Niels Stockfleth");
             Console.WriteLine();
             Console.WriteLine("This program is free software: you can redistribute it and/or modify");
             Console.WriteLine("it under the terms of the GNU General Public License as published by");
@@ -347,11 +352,11 @@ namespace PasswordManagerConsole
                 Console.WriteLine("Password repository file does not exist.");
                 return;
             }
-            if (!CheckSaveChanges())
+            if (repository != null)
             {
+                Console.WriteLine("Repository has not been closed.");
                 return;
             }
-            repository = null;            
             repositoryFileName = Path.GetFullPath(result[1].Input);
             if (result.Count > 2)
             {
@@ -367,11 +372,12 @@ namespace PasswordManagerConsole
                 keyDirectory = Path.GetDirectoryName(repositoryFileName);
             }
             var cs = new ConsoleReader();
-            cs.Prefix = "Enter password: ";
+            cs.Prefix = "Master Password: ";
             repositoryPassword = cs.ReadSecure();
             try
             {
                 repository = PasswordRepository.Read(repositoryFileName, keyDirectory, repositoryPassword, false);
+                Console.WriteLine("Repository opened.");
             }
             catch
             {
@@ -412,6 +418,7 @@ namespace PasswordManagerConsole
             {
                 repository.Name = name;
                 repository.Description = desc;
+                Console.WriteLine("Repository updated.");
             }
         }
 
@@ -427,11 +434,11 @@ namespace PasswordManagerConsole
                 Console.WriteLine("Password repository file already exists.");
                 return;
             }
-            if (!CheckSaveChanges())
+            if (repository != null)
             {
+                Console.WriteLine("Repository has not been closed.");
                 return;
             }
-            repository = null;
             repositoryFileName = Path.GetFullPath(result[1].Input);
             if (result.Count > 2)
             {
@@ -451,14 +458,35 @@ namespace PasswordManagerConsole
             var name = cr.Read(Path.GetFileNameWithoutExtension(repositoryFileName));
             cr.Prefix = "Description: ";
             var desc = cr.Read();
-            cr.Prefix = "Password: ";
+            cr.Prefix = "Master Password: ";
             repositoryPassword = cr.ReadSecure();
+            if (repositoryPassword.Length == 0)
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
+            while (true)
+            {
+                cr.Prefix = "Confirm Master Password: ";
+                var confirm = cr.ReadSecure();
+                if (confirm.Length == 0)
+                {
+                    Console.WriteLine("Aborted.");
+                    return;
+                }
+                if (confirm.IsEqualTo(repositoryPassword))
+                {
+                    break;
+                }
+                Console.WriteLine("Passwords do not match.");
+            }
             if (AskYesNoQuestion("Do you want to create the repository?") == Answer.Yes)
             {
                 repository = new PasswordRepository();
                 repository.Name = name;
                 repository.Description = desc;
                 repository.Save(repositoryFileName, keyDirectory, repositoryPassword);
+                Console.WriteLine("Repository created.");
             }
         }
 
@@ -477,6 +505,7 @@ namespace PasswordManagerConsole
             if (AskYesNoQuestion("Do you want to save the repository?") == Answer.Yes)
             {
                 repository.Save(repositoryFileName, keyDirectory, repositoryPassword);
+                Console.WriteLine("Repository saved.");
             }
         }
 
@@ -489,10 +518,62 @@ namespace PasswordManagerConsole
             }
             if (!CheckSaveChanges())
             {
+                Console.WriteLine("Aborted.");
                 return;
             }
             repository = null;
             repositoryPassword.Clear();
+            Console.WriteLine("Repository closed.");
+        }
+
+        private void ChangeMasterPasswordCommand(List<Shell.ParseResult> result)
+        {
+            if (repository == null)
+            {
+                Console.WriteLine("Password repository has not been opened.");
+                return;
+            }
+            if (!CheckSaveChanges())
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
+            var cr = new ConsoleReader();
+            cr.Prefix = "Current Master Password: ";
+            var check = cr.ReadSecure();
+            if (!check.IsEqualTo(repositoryPassword))
+            {
+                Console.WriteLine("Access denied.");
+                return;
+            }
+            cr.Prefix = "New Master Password: ";
+            var newrepositoryPassword = cr.ReadSecure();
+            if (newrepositoryPassword.Length == 0)
+            {
+                Console.WriteLine("Aborted.");
+                return;
+            }
+            while (true)
+            {
+                cr.Prefix = "Confirm New Master Password: ";
+                var confirm = cr.ReadSecure();
+                if (confirm.Length == 0)
+                {
+                    Console.WriteLine("Aborted.");
+                    return;
+                }
+                if (confirm.IsEqualTo(newrepositoryPassword))
+                {
+                    break;
+                }
+                Console.WriteLine("Passwords do not match.");
+            }
+            if (AskYesNoQuestion("Do you want to change the master password?") == Answer.Yes)
+            {
+                repository.ChangeMasterPassword(repositoryFileName, keyDirectory, newrepositoryPassword);
+                repositoryPassword = newrepositoryPassword;
+                Console.WriteLine("Master password changed.");
+            }
         }
 
         private void ListAccountCommand(List<Shell.ParseResult> result)
@@ -583,7 +664,8 @@ namespace PasswordManagerConsole
                     Login = login,
                     SecurePassword = pwd
                 };
-                repository.Add(pwditem);            
+                repository.Add(pwditem);
+                Console.WriteLine("Account added.");
             }
         }
 
@@ -636,6 +718,7 @@ namespace PasswordManagerConsole
                     pwditem.Login = login;
                     pwditem.Description = desc;
                     repository.Update(pwditem);
+                    Console.WriteLine("Account updated.");
                 }
             }
         }
@@ -681,6 +764,7 @@ namespace PasswordManagerConsole
                 if (AskYesNoQuestion("Do you want to remove the account?") == Answer.Yes)
                 {
                     repository.Remove(pwditem);
+                    Console.WriteLine("Account deleted.");
                 }
             }
         }
