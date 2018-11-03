@@ -26,6 +26,11 @@ namespace PasswordManagerConsole
 {
     public class ConsoleReader
     {
+
+        private ConsoleColor originalBackground;
+
+        private ConsoleColor originalForeground;
+        
         public ConsoleColor Foreground { get; set; } = Console.ForegroundColor;
 
         public ConsoleColor Background { get; set; } = Console.BackgroundColor;
@@ -38,10 +43,6 @@ namespace PasswordManagerConsole
 
         public Func<char, bool> IsValidChar { get; set; } = (c) => !char.IsControl(c);
 
-        private ConsoleColor originalBackground;
-
-        private ConsoleColor originalForeground;
-
         public SecureString ReadSecure()
         {
             var ret = new SecureString();
@@ -53,9 +54,9 @@ namespace PasswordManagerConsole
             return ret;
         }
 
-        public string Read()
+        public string Read(string defaultValue = "")
         {
-            var line = ReadLine(false).ToString().Trim();
+            var line = ReadLine(false, defaultValue).ToString().Trim();
             if (line.Length > 0)
             {
                 History.Add(line);
@@ -63,15 +64,21 @@ namespace PasswordManagerConsole
             return line;
         }
 
-        private StringBuilder ReadLine(bool secure)
+        private StringBuilder ReadLine(bool secure, string defaultValue = "")
         {
-            var txt = new StringBuilder();
             originalForeground = Console.ForegroundColor;
             originalBackground = Console.BackgroundColor;
             Console.Write(Prefix);
             Console.ForegroundColor = Foreground;
             Console.BackgroundColor = Background;
+            var txt = new StringBuilder();
             int pos = 0;
+            if (!string.IsNullOrEmpty(defaultValue))
+            {
+                txt.Append(defaultValue);
+                pos += defaultValue.Length;
+                Console.Write(txt);
+            }
             int historyIndex = History.Count - 1;
             List<string> expand = new List<string>();
             int expandidx = 0;
