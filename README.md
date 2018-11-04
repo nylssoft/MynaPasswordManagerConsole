@@ -1,10 +1,9 @@
 # MynaPasswordManagerConsole
 
-Password manager for dotnet core that allows to manage passwords stored in a password
+Console based password manager for .NET Core that allows to manage passwords stored in a password
 repository.
-This is a Console based version of the Myna Password Manager that also runs on Linux and Mac OS.
 
-Use dotnet core 2.1.
+Use .NET Core 2.1.
 
 Build and run:
 
