@@ -294,8 +294,8 @@ namespace PasswordManagerConsole
 
         private void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 1.0.0 for .NET Core");
-            Console.WriteLine("Copyright (c) 2018 Niels Stockfleth. All rights reserved.");
+            Console.WriteLine("Myna Password Manager Console version 1.1.0 for .NET Core");
+            Console.WriteLine("Copyright (c) 2024 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
             Console.WriteLine("  Add-Account                       - Adds an account.");
