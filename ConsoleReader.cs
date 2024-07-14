@@ -140,7 +140,9 @@ namespace PasswordManagerConsole
                 if (cki.Key == ConsoleKey.Insert)
                 {
                     insertMode = !insertMode;
+#pragma warning disable CA1416
                     try { Console.CursorSize = insertMode ? 10 : 50; } catch {/*fails on linux*/}
+#pragma warning restore CA1416
                 }
                 if (!secure && (cki.Key == ConsoleKey.UpArrow || cki.Key == ConsoleKey.DownArrow))
                 {
