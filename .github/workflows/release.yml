@@ -17,10 +17,6 @@ jobs:
         dotnet-version: 8.0.x
     - name: Publish
       run: dotnet publish
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        path: bin/Release/net8.0/publish
     - name: Create release ZIP file
       run: Compress-Archive -Path bin/Release/net8.0/publish/* -Destination "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"
     - name: Create github release
