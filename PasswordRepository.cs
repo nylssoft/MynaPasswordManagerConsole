@@ -1,6 +1,6 @@
 ﻿/*
     Myna Password Manager Console
-    Copyright (C) 2018 Niels Stockfleth
+    Copyright (C) 2018-2025 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -381,7 +381,7 @@ namespace PasswordManagerConsole
         {
             var required = new byte[6] { 23, 9, 78, 121, 108, 115 };
             var header = new byte[6];
-            stream.Read(header, 0, 6);
+            stream.ReadExactly(header, 0, 6);
             bool invalid = true;
             if (header.Length == required.Length)
             {
@@ -400,7 +400,7 @@ namespace PasswordManagerConsole
                 throw new ArgumentException("Invalid format for password file.");
             }
             var guid = new byte[16];
-            stream.Read(guid, 0, 16);
+            stream.ReadExactly(guid, 0, 16);
             return new Guid(guid).ToString();
         }
 

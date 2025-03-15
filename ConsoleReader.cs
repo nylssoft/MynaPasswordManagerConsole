@@ -1,6 +1,6 @@
 ﻿/*
     Myna Password Manager Console
-    Copyright (C) 2018 Niels Stockfleth
+    Copyright (C) 2018-2025 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,10 +17,8 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PasswordManagerConsole
 {
@@ -251,7 +249,7 @@ namespace PasswordManagerConsole
             Console.BackgroundColor = Background;
         }
 
-        private int PutChar(StringBuilder txt, int pos, char c, bool insertMode)
+        private static int PutChar(StringBuilder txt, int pos, char c, bool insertMode)
         {
             if (pos == txt.Length)
             {

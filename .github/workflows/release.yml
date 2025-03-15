@@ -14,10 +14,10 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
     - name: Publish
       run: dotnet publish
     - name: Create release ZIP file
-      run: Compress-Archive -Path bin/Release/net8.0/publish/* -Destination "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"
+      run: Compress-Archive -Path bin/Release/net9.0/publish/* -Destination "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"
     - name: Create github release
       run: gh release create "${{ github.ref_name }}" "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"

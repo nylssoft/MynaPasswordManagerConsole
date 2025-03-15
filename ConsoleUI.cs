@@ -1,6 +1,6 @@
 /*
     Myna Password Manager Console
-    Copyright (C) 2018 Niels Stockfleth
+    Copyright (C) 2018-2025 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Security;
 
@@ -140,7 +139,7 @@ namespace PasswordManagerConsole
             return Tuple.Create(ret, pos);
         }
 
-        private Answer AskYesNoCancelQuestion(string txt, Answer? dft = null)
+        private static Answer AskYesNoCancelQuestion(string txt, Answer? dft = null)
         {
             var cr = new ConsoleReader();
             cr.Prefix = $"{txt} (y)es / (n)o / (c)ancel: ";
@@ -167,7 +166,7 @@ namespace PasswordManagerConsole
             }
         }
 
-        private Answer AskYesNoQuestion(string txt, Answer? dft = null)
+        private static Answer AskYesNoQuestion(string txt, Answer? dft = null)
         {
             var cr = new ConsoleReader();
             cr.Prefix = $"{txt} (y)es / (n)o: ";
@@ -292,10 +291,10 @@ namespace PasswordManagerConsole
         }
 
 
-        private void ShowHelpCommand()
+        private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 8.0.2");
-            Console.WriteLine("Copyright (c) 2024 Niels Stockfleth. All rights reserved.");
+            Console.WriteLine("Myna Password Manager Console version 9.0.1");
+            Console.WriteLine("Copyright (c) 2025 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
             Console.WriteLine("  Add-Account                       - Adds an account.");
@@ -317,7 +316,7 @@ namespace PasswordManagerConsole
             Console.WriteLine("  Show-License                      - Displays license information.");
         }
 
-        private void ShowLicenseCommand()
+        private static void ShowLicenseCommand()
         {
             Console.WriteLine("Myna Password Manager Console");
             Console.WriteLine();
@@ -335,7 +334,7 @@ namespace PasswordManagerConsole
             Console.WriteLine("along with this program.  If not, see <http://www.gnu.org/licenses/>.");
         }
 
-        private void ClearConsoleCommand()
+        private static void ClearConsoleCommand()
         {
             Console.Clear();
         }
