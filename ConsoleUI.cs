@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public class ConsoleUI
     {
@@ -31,7 +31,7 @@ namespace PasswordManagerConsole
         private string keyDirectory;
         private SecureString repositoryPassword;
 
-        private static List<string> Commands = new List<string> {
+        private static readonly List<string> Commands = [
             "List-Account",
             "Add-Account",
             "Edit-Account",
@@ -49,15 +49,17 @@ namespace PasswordManagerConsole
             "Exit-Console",
             "Show-Help",
             "Show-License"
-        };
+        ];
 
         public void Run()
         {
             ShowHelpCommand();
-            var consoleReader = new ConsoleReader();
-            consoleReader.Background = ConsoleColor.DarkBlue;
-            consoleReader.Foreground = ConsoleColor.Yellow;
-            consoleReader.Expand = Expand;
+            var consoleReader = new ConsoleReader
+            {
+                Background = ConsoleColor.DarkBlue,
+                Foreground = ConsoleColor.Yellow,
+                Expand = Expand
+            };
             while (true)
             {
                 try
@@ -89,7 +91,7 @@ namespace PasswordManagerConsole
                 {
                     if (string.Equals(c, cmp, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        match = new List<string>();
+                        match = [];
                         break;
                     }
                 }
@@ -141,8 +143,10 @@ namespace PasswordManagerConsole
 
         private static Answer AskYesNoCancelQuestion(string txt, Answer? dft = null)
         {
-            var cr = new ConsoleReader();
-            cr.Prefix = $"{txt} (y)es / (n)o / (c)ancel: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = $"{txt} (y)es / (n)o / (c)ancel: "
+            };
             while (true)
             {
                 string dftinput = "";
@@ -151,15 +155,15 @@ namespace PasswordManagerConsole
                     dftinput = dft.Value == Answer.Yes ? "y" : (dft.Value == Answer.No ? "n" : "c");
                 }
                 var input = cr.Read(dftinput).ToLowerInvariant();
-                if (input=="y" || input=="yes")
+                if (input == "y" || input == "yes")
                 {
                     return Answer.Yes;
                 }
-                if (input=="n" || input=="no")
+                if (input == "n" || input == "no")
                 {
                     return Answer.No;
                 }
-                if (input=="c" || input == "cancel")
+                if (input == "c" || input == "cancel")
                 {
                     return Answer.Cancel;
                 }
@@ -168,8 +172,10 @@ namespace PasswordManagerConsole
 
         private static Answer AskYesNoQuestion(string txt, Answer? dft = null)
         {
-            var cr = new ConsoleReader();
-            cr.Prefix = $"{txt} (y)es / (n)o: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = $"{txt} (y)es / (n)o: "
+            };
             while (true)
             {
                 string dftinput = "";
@@ -178,11 +184,11 @@ namespace PasswordManagerConsole
                     dftinput = dft.Value == Answer.Yes ? "y" : "n";
                 }
                 var input = cr.Read(dftinput).ToLowerInvariant();
-                if (input=="y" || input=="yes")
+                if (input == "y" || input == "yes")
                 {
                     return Answer.Yes;
                 }
-                if (input=="n" || input=="no")
+                if (input == "n" || input == "no")
                 {
                     return Answer.No;
                 }
@@ -205,7 +211,7 @@ namespace PasswordManagerConsole
                     return false;
                 }
             }
-            return true;            
+            return true;
         }
 
         private Password FindAccount(string name)
@@ -293,7 +299,7 @@ namespace PasswordManagerConsole
 
         private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 9.0.1");
+            Console.WriteLine("Myna Password Manager Console version 9.0.2");
             Console.WriteLine("Copyright (c) 2025 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
@@ -370,8 +376,10 @@ namespace PasswordManagerConsole
             {
                 keyDirectory = Path.GetDirectoryName(repositoryFileName);
             }
-            var cs = new ConsoleReader();
-            cs.Prefix = "Master Password: ";
+            var cs = new ConsoleReader
+            {
+                Prefix = "Master Password: "
+            };
             repositoryPassword = cs.ReadSecure();
             try
             {
@@ -408,8 +416,10 @@ namespace PasswordManagerConsole
                 Console.WriteLine("Password repository has not been opened.");
                 return;
             }
-            var cr = new ConsoleReader();
-            cr.Prefix = "Name: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = "Name: "
+            };
             var name = cr.Read(repository.Name);
             cr.Prefix = "Description: ";
             var desc = cr.Read(repository.Description);
@@ -452,8 +462,10 @@ namespace PasswordManagerConsole
             {
                 keyDirectory = Path.GetDirectoryName(repositoryFileName);
             }
-            var cr = new ConsoleReader();
-            cr.Prefix = "Name: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = "Name: "
+            };
             var name = cr.Read(Path.GetFileNameWithoutExtension(repositoryFileName));
             cr.Prefix = "Description: ";
             var desc = cr.Read();
@@ -481,9 +493,11 @@ namespace PasswordManagerConsole
             }
             if (AskYesNoQuestion("Do you want to create the repository?") == Answer.Yes)
             {
-                repository = new PasswordRepository();
-                repository.Name = name;
-                repository.Description = desc;
+                repository = new PasswordRepository
+                {
+                    Name = name,
+                    Description = desc
+                };
                 repository.Save(repositoryFileName, keyDirectory, repositoryPassword);
                 Console.WriteLine("Repository created.");
             }
@@ -537,8 +551,10 @@ namespace PasswordManagerConsole
                 Console.WriteLine("Aborted.");
                 return;
             }
-            var cr = new ConsoleReader();
-            cr.Prefix = "Current Master Password: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = "Current Master Password: "
+            };
             var check = cr.ReadSecure();
             if (!check.IsEqualTo(repositoryPassword))
             {
@@ -633,8 +649,10 @@ namespace PasswordManagerConsole
                 Console.WriteLine("Password repository has not been opened.");
                 return;
             }
-            var cr = new ConsoleReader();
-            cr.Prefix = "Name: ";
+            var cr = new ConsoleReader
+            {
+                Prefix = "Name: "
+            };
             string name;
             while (true)
             {
@@ -683,8 +701,10 @@ namespace PasswordManagerConsole
             var pwditem = FindAccount(result[1].Input);
             if (pwditem != null)
             {
-                var cr = new ConsoleReader();
-                cr.Prefix = "Name: ";
+                var cr = new ConsoleReader
+                {
+                    Prefix = "Name: "
+                };
                 string newname;
                 while (true)
                 {

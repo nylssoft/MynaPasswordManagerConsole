@@ -23,19 +23,19 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public class PasswordRepository
     {
-        public static readonly Version FILE_FORMAT = new Version(0, 5, 2);
+        public static readonly Version FILE_FORMAT = new(0, 5, 2);
 
-        public static readonly Version FILE_FORMAT_050 = new Version(0, 5, 0);
+        public static readonly Version FILE_FORMAT_050 = new(0, 5, 0);
 
         private enum SecretType { Key, IV };
 
         private enum TransformType { Encrypt, Decrypt };
 
-        private Dictionary<string, Password> passwordDict;
+        private readonly Dictionary<string, Password> passwordDict;
         private string name;
         private string description;
 
@@ -73,7 +73,7 @@ namespace PasswordManagerConsole
 
         public PasswordRepository()
         {
-            passwordDict = new Dictionary<string, Password>();
+            passwordDict = [];
             Version = FILE_FORMAT;
             Id = Guid.NewGuid().ToString();
             name = string.Empty;
@@ -85,7 +85,7 @@ namespace PasswordManagerConsole
         {
             get
             {
-                List<Password> ret = new List<Password>();
+                List<Password> ret = [];
                 foreach (var p in passwordDict.Values)
                 {
                     ret.Add(new Password(p));
@@ -194,21 +194,17 @@ namespace PasswordManagerConsole
                         passwordsElem.AppendChild(passwordElem);
                     }
                     rootElem.AppendChild(passwordsElem);
-                    using (var ms = new MemoryStream())
-                    {
-                        // write XML to memory
-                        doc.Save(ms);
-                        ms.Seek(0, SeekOrigin.Begin);
-                        using (var fs = new FileStream(repositoryFile, FileMode.Create))
-                        {
-                            // write header and ID
-                            var header = new byte[6] { 23, 9, 78, 121, 108, 115 };
-                            fs.Write(header, 0, 6);
-                            var guid = new Guid(Id);
-                            fs.Write(guid.ToByteArray(), 0, 16);
-                            Encrypt(cryptoTransform, ms, fs);
-                        }
-                    }
+                    using var ms = new MemoryStream();
+                    // write XML to memory
+                    doc.Save(ms);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    using var fs = new FileStream(repositoryFile, FileMode.Create);
+                    // write header and ID
+                    var header = new byte[6] { 23, 9, 78, 121, 108, 115 };
+                    fs.Write(header, 0, 6);
+                    var guid = new Guid(Id);
+                    fs.Write(guid.ToByteArray(), 0, 16);
+                    Encrypt(cryptoTransform, ms, fs);
                 }
                 Version = FILE_FORMAT;
                 Changed = false;
@@ -229,67 +225,65 @@ namespace PasswordManagerConsole
             var repository = new PasswordRepository();
             using (var rijAlg = Aes.Create())
             {
-                using (var ms = new MemoryStream())
+                using var ms = new MemoryStream();
+                ICryptoTransform cryptoTransform;
+                using (var fs = new FileStream(repositoryFile, FileMode.Open))
                 {
-                    ICryptoTransform cryptoTransform;
-                    using (var fs = new FileStream(repositoryFile, FileMode.Open))
+                    // read header part of the file
+                    repository.Id = ReadId(fs);
+                    // read encrypted key and vector for the ID
+                    var iv = ReadSecret(keyDirectory, repository.Id, SecretType.IV);
+                    if (oldFormat)
                     {
-                        // read header part of the file
-                        repository.Id = ReadId(fs);
-                        // read encrypted key and vector for the ID
-                        var iv = ReadSecret(keyDirectory, repository.Id, SecretType.IV);
-                        if (oldFormat)
-                        {
-                            var key = Read($"{keyDirectory}{Path.DirectorySeparatorChar}{repository.Id}.kv");
-                            Mix(key, securePassword);
-                            rijAlg.Key = key;
-                        }
-                        else
-                        {
-                            var encryptedKey = ReadSecret(keyDirectory, repository.Id, SecretType.Key);
-                            rijAlg.Key = TransformKey(encryptedKey, iv, securePassword, TransformType.Decrypt);
-                        }
-                        rijAlg.IV = iv;
-                        cryptoTransform = rijAlg.CreateDecryptor();
-                        // decrypt XML part of the file
-                        Decrypt(cryptoTransform, fs, ms);
+                        var key = Read($"{keyDirectory}{Path.DirectorySeparatorChar}{repository.Id}.kv");
+                        Mix(key, securePassword);
+                        rijAlg.Key = key;
                     }
-                    var xmldoc = new XmlDocument();
-                    xmldoc.LoadXml(Encoding.UTF8.GetString(ms.ToArray()));
-                    var rootElem = xmldoc.DocumentElement;
-                    repository.Name = rootElem["Name"].InnerText;
-                    repository.Description = rootElem["Description"].InnerText;
-                    repository.Version = new Version(rootElem["Version"].InnerText);
-                    var entriesElem = rootElem["Passwords"];
-                    if (entriesElem.HasChildNodes)
+                    else
                     {
-                        foreach (XmlNode node in entriesElem.ChildNodes)
+                        var encryptedKey = ReadSecret(keyDirectory, repository.Id, SecretType.Key);
+                        rijAlg.Key = TransformKey(encryptedKey, iv, securePassword, TransformType.Decrypt);
+                    }
+                    rijAlg.IV = iv;
+                    cryptoTransform = rijAlg.CreateDecryptor();
+                    // decrypt XML part of the file
+                    Decrypt(cryptoTransform, fs, ms);
+                }
+                var xmldoc = new XmlDocument();
+                xmldoc.LoadXml(Encoding.UTF8.GetString(ms.ToArray()));
+                var rootElem = xmldoc.DocumentElement;
+                repository.Name = rootElem["Name"].InnerText;
+                repository.Description = rootElem["Description"].InnerText;
+                repository.Version = new Version(rootElem["Version"].InnerText);
+                var entriesElem = rootElem["Passwords"];
+                if (entriesElem.HasChildNodes)
+                {
+                    foreach (XmlNode node in entriesElem.ChildNodes)
+                    {
+                        if (node.Name == "Password")
                         {
-                            if (node.Name == "Password")
+                            var passwordElem = node as XmlElement;
+                            var pwd = new Password()
                             {
-                                var passwordElem = node as XmlElement;
-                                var pwd = new Password()
-                                {
-                                    Name = passwordElem["Name"].InnerText,
-                                    Description = passwordElem["Description"].InnerText,
-                                    Url = passwordElem["Url"].InnerText
-                                };
-                                if (repository.Version > FILE_FORMAT_050)
-                                {
-                                    pwd.Id = passwordElem["Id"].InnerText;
-                                }
-                                // decrypt login and password
-                                var cipherLogin = Convert.FromBase64String(passwordElem["CipherLogin"].InnerText);
-                                pwd.Login = Decrypt(cryptoTransform, cipherLogin);
-                                var cipherPwd = Convert.FromBase64String(passwordElem["CipherPassword"].InnerText);
-                                foreach (var c in Decrypt(cryptoTransform, cipherPwd))
-                                {
-                                    pwd.SecurePassword.AppendChar(c);
-                                }
-                                Array.Clear(cipherPwd, 0, cipherPwd.Length);
-                                pwd.SecurePassword.MakeReadOnly();
-                                repository.passwordDict[pwd.Id] = pwd;
+                                Name = passwordElem["Name"].InnerText,
+                                Description = passwordElem["Description"].InnerText,
+                                Url = passwordElem["Url"].InnerText
+                            };
+                            if (repository.Version > FILE_FORMAT_050)
+                            {
+                                pwd.Id = passwordElem["Id"].InnerText;
                             }
+                            // decrypt login and password
+                            var cipherLogin = Convert.FromBase64String(passwordElem["CipherLogin"].InnerText);
+                            pwd.Login = Decrypt(cryptoTransform, cipherLogin);
+                            var cipherPwd = Convert.FromBase64String(passwordElem["CipherPassword"].InnerText);
+                            foreach (var c in Decrypt(cryptoTransform, cipherPwd))
+                            {
+                                pwd.SecurePassword.AppendChar(c);
+                            }
+                            Array.Clear(cipherPwd, 0, cipherPwd.Length);
+                            pwd.SecurePassword.MakeReadOnly();
+                            repository.passwordDict[pwd.Id] = pwd;
                         }
                     }
                 }
@@ -298,44 +292,11 @@ namespace PasswordManagerConsole
             return repository;
         }
 
-        public static string GetIdFromFile(string repositoryFile)
-        {
-            using (var fs = new FileStream(repositoryFile, FileMode.Open))
-            {
-                return ReadId(fs);
-            }
-        }
-
         public static bool ExistKey(string keyDirectory, string id)
         {
             return
                 File.Exists($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv2") &&
                 File.Exists($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.iv");
-        }
-
-        public static bool MigrateKey(string keyDirectory, string id, SecureString securePassword)
-        {
-            if (File.Exists($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv"))
-            {
-                var iv = ReadSecret(keyDirectory, id, SecretType.IV);
-                var key = Read($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv");
-                var encryptedKey = TransformKey(key, iv, securePassword, TransformType.Encrypt);
-                using (var fs = new FileStream($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv2", FileMode.CreateNew))
-                {
-                    fs.Write(encryptedKey, 0, encryptedKey.Length);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        public void MoveKey(string sourceKeyDirectory, string destinationKeyDirectory)
-        {
-            if (ExistKey(sourceKeyDirectory, Id))
-            {
-                File.Move($"{sourceKeyDirectory}{Path.DirectorySeparatorChar}{Id}.kv2", $"{destinationKeyDirectory}{Path.DirectorySeparatorChar}{Id}.kv2");
-                File.Move($"{sourceKeyDirectory}{Path.DirectorySeparatorChar}{Id}.iv", $"{destinationKeyDirectory}{Path.DirectorySeparatorChar}{Id}.iv");
-            }
         }
 
         #region static helper methods
@@ -406,59 +367,40 @@ namespace PasswordManagerConsole
 
         private static void Encrypt(ICryptoTransform cryptoTransform, Stream input, Stream output)
         {
-            using (var cs = new CryptoStream(output, cryptoTransform, CryptoStreamMode.Write))
-            {
-                input.CopyTo(cs);
-            }
+            using var cs = new CryptoStream(output, cryptoTransform, CryptoStreamMode.Write);
+            input.CopyTo(cs);
         }
 
         private static byte[] Encrypt(ICryptoTransform cryptoTransform, string plainText)
         {
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            using var cs = new CryptoStream(ms, cryptoTransform, CryptoStreamMode.Write);
+            using (var sw = new StreamWriter(cs))
             {
-                using (var cs = new CryptoStream(ms, cryptoTransform, CryptoStreamMode.Write))
-                {
-                    using (var sw = new StreamWriter(cs))
-                    {
-                        sw.Write(plainText);
-                    }
-                    return ms.ToArray();
-                }
+                sw.Write(plainText);
             }
+            return ms.ToArray();
         }
 
         private static void Decrypt(ICryptoTransform cryptoTransform, Stream input, Stream output)
         {
-            using (var cs = new CryptoStream(input, cryptoTransform, CryptoStreamMode.Read))
-            {
-                cs.CopyTo(output);
-            }
+            using var cs = new CryptoStream(input, cryptoTransform, CryptoStreamMode.Read);
+            cs.CopyTo(output);
         }
 
         private static string Decrypt(ICryptoTransform cryptoTransform, byte[] cipherText)
         {
-            using (var ms = new MemoryStream(cipherText))
-            {
-                using (var cs = new CryptoStream(ms, cryptoTransform, CryptoStreamMode.Read))
-                {
-                    using (var sr = new StreamReader(cs))
-                    {
-                        return sr.ReadToEnd();
-                    }
-                }
-            }
+            using var ms = new MemoryStream(cipherText);
+            using var cs = new CryptoStream(ms, cryptoTransform, CryptoStreamMode.Read);
+            using var sr = new StreamReader(cs);
+            return sr.ReadToEnd();
         }
 
         private static void Mix(byte[] key, SecureString securePassword)
         {
             var str_pwd = securePassword.GetAsString();
             var bytes = Encoding.UTF8.GetBytes(str_pwd);
-            str_pwd = string.Empty;
-            byte[] passwordHash;
-            using (var sha265 = SHA256.Create())
-            {
-                passwordHash = sha265.ComputeHash(bytes);
-            }
+            byte[] passwordHash = SHA256.HashData(bytes);
             Array.Clear(bytes, 0, bytes.Length);
             var maxlen = Math.Min(passwordHash.Length, key.Length);
             for (int idx = 0; idx < maxlen; idx++)
@@ -470,60 +412,51 @@ namespace PasswordManagerConsole
 
         private static byte[] TransformKey(byte[] key, byte[] iv, SecureString securePassword, TransformType t)
         {
-            using (var sha265 = SHA256.Create())
+            using var rijAlg = Aes.Create();
+            rijAlg.KeySize = 256; // same size as password hash (SHA-256)
+            var str_pwd = securePassword.GetAsString();
+            var bytes = Encoding.UTF8.GetBytes(str_pwd);
+            str_pwd = string.Empty;
+            rijAlg.Key = SHA256.HashData(bytes);
+            Array.Clear(bytes, 0, bytes.Length);
+            rijAlg.IV = iv;
+            using var destStream = new MemoryStream();
+            using (var sourceStream = new MemoryStream(key))
             {
-                using (var rijAlg = Aes.Create())
+                switch (t)
                 {
-                    rijAlg.KeySize = 256; // same size as password hash (SHA-256)
-                    var str_pwd = securePassword.GetAsString();
-                    var bytes = Encoding.UTF8.GetBytes(str_pwd);
-                    str_pwd = string.Empty;
-                    rijAlg.Key = sha265.ComputeHash(bytes);
-                    Array.Clear(bytes, 0, bytes.Length);
-                    rijAlg.IV = iv;
-                    using (var destStream = new MemoryStream())
-                    {
-                        using (var sourceStream = new MemoryStream(key))
-                        {
-                            switch (t)
-                            {
-                                case TransformType.Encrypt:
-                                    Encrypt(rijAlg.CreateEncryptor(), sourceStream, destStream);
-                                    break;
-                                case TransformType.Decrypt:
-                                    Decrypt(rijAlg.CreateDecryptor(), sourceStream, destStream);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                        return destStream.ToArray();
-                    }
+                    case TransformType.Encrypt:
+                        Encrypt(rijAlg.CreateEncryptor(), sourceStream, destStream);
+                        break;
+                    case TransformType.Decrypt:
+                        Decrypt(rijAlg.CreateDecryptor(), sourceStream, destStream);
+                        break;
+                    default:
+                        break;
                 }
             }
+            return destStream.ToArray();
         }
 
         private static void WriteNewKey(string keyDirectory, string id, SecureString securePassword)
         {
-            using (var rijAlg = Aes.Create())
+            using var rijAlg = Aes.Create();
+            rijAlg.KeySize = 256; // same size as SHA-256 hash
+                                  // create and write initialization vector file
+            rijAlg.GenerateIV();
+            using (var fsiv = new FileStream($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.iv", FileMode.Create))
             {
-                rijAlg.KeySize = 256; // same size as SHA-256 hash
-                // create and write initialization vector file
-                rijAlg.GenerateIV();
-                using (var fsiv = new FileStream($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.iv", FileMode.Create))
-                {
-                    fsiv.Write(rijAlg.IV, 0, rijAlg.IV.Length);
-                }
-                // create key and encrypt key with password hash
-                rijAlg.GenerateKey();
-                var encryptedKey = TransformKey(rijAlg.Key, rijAlg.IV, securePassword, TransformType.Encrypt);
-                // write key file
-                using (var fskv = new FileStream($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv2", FileMode.Create))
-                {
-                    fskv.Write(encryptedKey, 0, encryptedKey.Length);
-                }
-                Array.Clear(encryptedKey, 0, encryptedKey.Length);
+                fsiv.Write(rijAlg.IV, 0, rijAlg.IV.Length);
             }
+            // create key and encrypt key with password hash
+            rijAlg.GenerateKey();
+            var encryptedKey = TransformKey(rijAlg.Key, rijAlg.IV, securePassword, TransformType.Encrypt);
+            // write key file
+            using (var fskv = new FileStream($"{keyDirectory}{Path.DirectorySeparatorChar}{id}.kv2", FileMode.Create))
+            {
+                fskv.Write(encryptedKey, 0, encryptedKey.Length);
+            }
+            Array.Clear(encryptedKey, 0, encryptedKey.Length);
         }
 
         private static byte[] ReadSecret(string keyDirectory, string id, SecretType st)
@@ -540,19 +473,17 @@ namespace PasswordManagerConsole
         private static byte[] Read(string filename)
         {
             const int CHUNK_SIZE = 8192;
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            using (FileStream fs = new(filename, FileMode.Open))
             {
-                using (FileStream fs = new FileStream(filename, FileMode.Open))
+                int readCount;
+                var buffer = new byte[CHUNK_SIZE];
+                while ((readCount = fs.Read(buffer, 0, buffer.Length)) != 0)
                 {
-                    int readCount;
-                    var buffer = new byte[CHUNK_SIZE];
-                    while ((readCount = fs.Read(buffer, 0, buffer.Length)) != 0)
-                    {
-                        ms.Write(buffer, 0, readCount);
-                    }
+                    ms.Write(buffer, 0, readCount);
                 }
-                return ms.ToArray();
             }
+            return ms.ToArray();
         }
 
         #endregion

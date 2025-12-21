@@ -22,29 +22,21 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public static class Shell
     {
         public enum Token { ID, STRING };
 
-        public class ParseResult
+        public class ParseResult(int startpos, int endpos, Shell.Token token, string input)
         {
-            public ParseResult(int startpos, int endpos, Token token, string input)
-            {
-                StartPosition = startpos;
-                EndPosition = endpos;
-                InputToken = token;
-                Input = input;
-            }
+            public int StartPosition { get; set; } = startpos;
 
-            public int StartPosition { get; set; }
+            public int EndPosition { get; set; } = endpos;
 
-            public int EndPosition { get; set; }
+            public string Input { get; set; } = input;
 
-            public string Input { get; set; }
-
-            public Token InputToken { get; set; }
+            public Token InputToken { get; set; } = token;
         }
 
         public static List<ParseResult> Parse(string cmdline)
@@ -103,7 +95,7 @@ namespace PasswordManagerConsole
 
         public static string Quote(string input)
         {
-            if (input.IndexOf(' ') >= 0)
+            if (input.Contains(' '))
             {
                 return $"'{input}'";
             }
@@ -124,9 +116,9 @@ namespace PasswordManagerConsole
                     if (!fileName.EndsWith(Path.DirectorySeparatorChar))
                     {
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                            && fileName.EndsWith("/"))
+                            && fileName.EndsWith('/'))
                         {
-                            dirName = dirName.Substring(0, dirName.Length - 1);
+                            dirName = dirName[..^1];
                         }
                         dirName += Path.DirectorySeparatorChar;
                     }
@@ -137,18 +129,18 @@ namespace PasswordManagerConsole
                     var idx = fileName.LastIndexOf(Path.DirectorySeparatorChar);
                     if (idx < 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     {
-                        idx = fileName.LastIndexOf("/");
+                        idx = fileName.LastIndexOf('/');
                     }
                     if (idx >= 0)
                     {
-                        var d = fileName.Substring(0, idx + 1);
+                        var d = fileName[..(idx + 1)];
                         if (Directory.Exists(d))
                         {
                             dirName = d;
                             dirPrefix = dirName;
                             if (idx < fileName.Length - 1)
                             {
-                                searchPattern = $"{fileName.Substring(idx + 1)}*";
+                                searchPattern = $"{fileName[(idx + 1)..]}*";
                             }
                         }
                     }

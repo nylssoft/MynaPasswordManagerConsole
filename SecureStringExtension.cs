@@ -19,7 +19,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public static class SecureStringExtension
     {

@@ -18,7 +18,7 @@
 using System;
 using System.Security;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public class Password
     {

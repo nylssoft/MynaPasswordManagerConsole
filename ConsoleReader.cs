@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Security;
 using System.Text;
 
-namespace PasswordManagerConsole
+namespace MynaPasswordManagerConsole
 {
     public class ConsoleReader
     {
@@ -28,7 +28,7 @@ namespace PasswordManagerConsole
         private ConsoleColor originalBackground;
 
         private ConsoleColor originalForeground;
-        
+
         public ConsoleColor Foreground { get; set; } = Console.ForegroundColor;
 
         public ConsoleColor Background { get; set; } = Console.BackgroundColor;
@@ -78,7 +78,7 @@ namespace PasswordManagerConsole
                 Console.Write(txt);
             }
             int historyIndex = History.Count - 1;
-            List<string> expand = new List<string>();
+            List<string> expand = [];
             int expandidx = 0;
             int removecnt = 0;
             bool insertMode = true;
