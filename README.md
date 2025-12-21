@@ -3,7 +3,7 @@
 Console based password manager for .NET Core that allows to manage passwords stored in a password
 repository.
 
-Use .NET 9.
+Use .NET 10.
 
 Build and run:
 

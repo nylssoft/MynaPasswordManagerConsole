@@ -299,7 +299,7 @@ namespace MynaPasswordManagerConsole
 
         private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 9.0.2");
+            Console.WriteLine("Myna Password Manager Console version 10.0.1");
             Console.WriteLine("Copyright (c) 2025 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
