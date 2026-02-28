@@ -817,14 +817,8 @@ namespace MynaPasswordManagerConsole
             {
                 if (result.Count < 2 || password.Name.StartsWith(result[1].Input, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (password.Name.IndexOf(' ') > 0)
-                    {
-                        Console.WriteLine($"'{password.Name}'");
-                    }
-                    else
-                    {
-                        Console.WriteLine(password.Name);
-                    }
+                    // display bare name, no quoting required
+                    Console.WriteLine(password.Name);
                 }
             }
         }
