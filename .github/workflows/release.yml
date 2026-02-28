@@ -9,14 +9,29 @@ jobs:
     env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    - name: Checkout
+    # checkout the main repository (console) and its companion cloud export project
+    - name: Checkout console repo
       uses: actions/checkout@v4
+      with:
+        # fetch full history so tags are available
+        fetch-depth: 0
+        # checkout submodules if the cloud project were added as one
+        submodules: 'recursive'
+
+    - name: Checkout CloudExport project
+      uses: actions/checkout@v4
+      with:
+        repository: 'nylssoft/MynaCloudExport'
+        path: 'MynaCloudExport'
+        fetch-depth: 0
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
     - name: Publish
-      run: dotnet publish
+      run: |
+        # build/publish console project; referenced CloudExport project lives in MynaCloudExport
+        dotnet publish -c Release
     - name: Create release ZIP file
       run: Compress-Archive -Path bin/Release/net10.0/publish/* -Destination "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"
     - name: Create github release
