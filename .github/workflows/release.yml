@@ -9,21 +9,22 @@ jobs:
     env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    # checkout the main repository (console) and its companion cloud export project
-    - name: Checkout console repo
+    - name: Checkout MynaPasswordManagerConsole
       uses: actions/checkout@v4
+      with:
+        path: 'MynaPasswordManagerConsole'
     - name: Checkout CloudExport project
       uses: actions/checkout@v4
       with:
         repository: 'nylssoft/MynaCloudExport'
-        path: '../MynaCloudExport'
+        path: 'MynaCloudExport'
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
     - name: Publish
       run: |
-        # build/publish console project; referenced CloudExport project lives in MynaCloudExport
+        cd MynaPasswordManagerConsole
         dotnet publish -c Release
     - name: Create release ZIP file
       run: Compress-Archive -Path bin/Release/net10.0/publish/* -Destination "MynaPasswordManagerConsole-${{ github.ref_name }}.zip"
