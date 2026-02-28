@@ -12,18 +12,11 @@ jobs:
     # checkout the main repository (console) and its companion cloud export project
     - name: Checkout console repo
       uses: actions/checkout@v4
-      with:
-        # fetch full history so tags are available
-        fetch-depth: 0
-        # checkout submodules if the cloud project were added as one
-        submodules: 'recursive'
-
     - name: Checkout CloudExport project
       uses: actions/checkout@v4
       with:
         repository: 'nylssoft/MynaCloudExport'
-        path: 'MynaCloudExport'
-        fetch-depth: 0
+        path: '../MynaCloudExport'
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
