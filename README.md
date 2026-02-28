@@ -13,7 +13,7 @@ set of intuitive commands and aliases for quick navigation.
 - **Create, open, save, and close** password repositories
 - **Add, edit, delete and list** account entries
 - **Secure master password** with per-account keys and AES encryption
-- **Command aliases** (`ls`, `quit`, `help`, `cat`) and tab-completion
+- **Command aliases** (`ls`, `cat`, `clear`, `help`, `go`, `quit`, `sync`) and tab-completion
 - **Optional CLI argument** to open a repository immediately
 - Simple **import/export** support via copy/paste (not shown here)
 
@@ -87,6 +87,11 @@ Name: GitHub
 URL: https://github.com
 Login: nyls
 Password: ******
+# open URL (alias)
+go GitHub
+clear
+# sync repository (alias)
+sync
 # exit (alias)
 quit
 ```
@@ -103,15 +108,15 @@ The console accepts full commands and several short aliases:
 | `Edit-Account`     |        | Modify an existing entry        |
 | `Delete-Account`   |        | Remove an entry                 |
 | `Show-Account`     | `cat`  | Display account details         |
-| `Open-URL`         |        | Open the account's URL/browser  |
+| `Open-URL`         | `go`   | Open the account's URL/browser  |
 | `New-Repository`   |        | Create a new repository file    |
 | `Open-Repository`  |        | Open an existing repository     |
 | `Show-Repository`  |        | Show repository metadata        |
 | `Save-Repository`  |        | Persist changes                 |
 | `Close-Repository` |        | Close current repository        |
 | `Change-MasterPassword` |   | Change master password          |
-| `Sync-Passwords`   |        | Synchronize with cloud copy     |
-| `Clear-Console`    |        | Clear the screen                |
+| `Sync-Passwords`   | `sync`| Synchronize with cloud copy     |
+| `Clear-Console`    | `clear`| Clear the screen               |
 | `Show-Help`        | `help` | Display help text               |
 | `Show-License`     |        | Show GPL license text           |
 | `Exit-Console`     | `quit` | Exit application                |

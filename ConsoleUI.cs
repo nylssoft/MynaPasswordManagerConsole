@@ -60,10 +60,12 @@ namespace MynaPasswordManagerConsole
         private static readonly Dictionary<string, string> Aliases =
             new(StringComparer.InvariantCultureIgnoreCase)
         {
+            { "cat", "show-account" },
+            { "clear", "clear-console" },
+            { "help", "show-help" },
+            { "go", "open-url" },
             { "ls", "list-account" },
             { "quit", "exit-console" },
-            { "help", "show-help" },
-            { "cat", "show-account" },
             { "sync", "sync-passwords" }
         };
 
@@ -342,7 +344,7 @@ namespace MynaPasswordManagerConsole
 
         private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 10.1.0");
+            Console.WriteLine("Myna Password Manager Console version 10.1.6");
             Console.WriteLine("Usage: MynaPasswordManagerConsole [password-file]");
             Console.WriteLine("Copyright (c) 2026 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
@@ -363,14 +365,17 @@ namespace MynaPasswordManagerConsole
             Console.WriteLine("  Clear-Console                     - Clears the console.");
             Console.WriteLine("  Exit-Console                      - Exits the program.");
             Console.WriteLine("  Show-Help                         - Displays this text.");
-            Console.WriteLine("  Sync-Passwords                   - Synchronizes local and cloud password items.");
+            Console.WriteLine("  Sync-Passwords                    - Synchronizes local and cloud password items.");
+            Console.WriteLine("  Show-License                      - Displays license information.");
             Console.WriteLine();
             Console.WriteLine("Aliases:");
-            Console.WriteLine("  ls     -> List-Account");
-            Console.WriteLine("  quit   -> Exit-Console");
-            Console.WriteLine("  help   -> Show-Help");
             Console.WriteLine("  cat    -> Show-Account");
-            Console.WriteLine("  Show-License                      - Displays license information.");
+            Console.WriteLine("  clear  -> Clear-Console");
+            Console.WriteLine("  go     -> Open-URL");
+            Console.WriteLine("  help   -> Show-Help");
+            Console.WriteLine("  ls     -> List-Account");
+            Console.WriteLine("  sync   -> Sync-Passwords");
+            Console.WriteLine("  quit   -> Exit-Console");
         }
 
         private static void ShowLicenseCommand()
