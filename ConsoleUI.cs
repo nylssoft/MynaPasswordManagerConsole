@@ -17,8 +17,12 @@
 */
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
+using System.Globalization;
 using System.Security;
+using CloudExport;
+using CloudExport.Services;
 
 namespace MynaPasswordManagerConsole
 {
@@ -48,7 +52,8 @@ namespace MynaPasswordManagerConsole
             "Clear-Console",
             "Exit-Console",
             "Show-Help",
-            "Show-License"
+            "Show-License",
+            "Sync-Passwords"
         ];
 
         // aliases map shortcut names to the canonical command
@@ -58,7 +63,8 @@ namespace MynaPasswordManagerConsole
             { "ls", "list-account" },
             { "quit", "exit-console" },
             { "help", "show-help" },
-            { "cat", "show-account" }
+            { "cat", "show-account" },
+            { "sync", "sync-passwords" }
         };
 
         // helper to return all tokens that may be tab‑completed (commands + aliases)
@@ -319,6 +325,9 @@ namespace MynaPasswordManagerConsole
                     case "show-help":
                         ShowHelpCommand();
                         break;
+                    case "sync-passwords":
+                        SyncPasswordsCommand(parseResult);
+                        break;
                     case "show-license":
                         ShowLicenseCommand();
                         break;
@@ -333,7 +342,7 @@ namespace MynaPasswordManagerConsole
 
         private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 10.0.2");
+            Console.WriteLine("Myna Password Manager Console version 10.0.3");
             Console.WriteLine("Usage: MynaPasswordManagerConsole [password-file]");
             Console.WriteLine("Copyright (c) 2026 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
@@ -354,6 +363,7 @@ namespace MynaPasswordManagerConsole
             Console.WriteLine("  Clear-Console                     - Clears the console.");
             Console.WriteLine("  Exit-Console                      - Exits the program.");
             Console.WriteLine("  Show-Help                         - Displays this text.");
+            Console.WriteLine("  Sync-Passwords                   - Synchronizes local and cloud password items.");
             Console.WriteLine();
             Console.WriteLine("Aliases:");
             Console.WriteLine("  ls     -> List-Account");
@@ -684,6 +694,113 @@ namespace MynaPasswordManagerConsole
                 repository.ChangeMasterPassword(repositoryFileName, keyDirectory, newrepositoryPassword);
                 repositoryPassword = newrepositoryPassword;
                 Console.WriteLine("Master password changed.");
+            }
+        }
+
+        // synchronize local password entries with the cloud copy
+        private void SyncPasswordsCommand(List<Shell.ParseResult> result)
+        {
+            if (repository == null)
+            {
+                Console.WriteLine("Password repository has not been opened.");
+                return;
+            }
+
+            try
+            {
+                // initialize REST client with cloud hostname
+                var locale = "en-US";
+                var host = "www.stockfleth.eu";
+                CloudExport.CloudExport.Init(host, locale).GetAwaiter().GetResult();
+
+                // authenticate against the cloud; interactive prompts will be shown
+                var token = CloudExport.CloudExport.AuthenticateAsync(null, null, null, locale).GetAwaiter().GetResult();
+                var userModel = CloudExport.CloudExport.GetUserModel(token).GetAwaiter().GetResult();
+                var salt = userModel.passwordManagerSalt;
+                // encryption key for cloud items
+                var key = CloudExport.ConsoleUtils.ReadSecret("LABEL_KEY");
+
+                var cloudItems = CloudExport.CloudExport.FetchPasswordItemsAsync(token, key, salt).GetAwaiter().GetResult();
+
+                // determine differences
+                var local = repository.Passwords;
+                var missingLocal = cloudItems.Where(ci => !local.Any(lp => string.Equals(lp.Name, ci.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
+                var missingCloud = local.Where(lp => cloudItems.All(ci => !string.Equals(ci.Name, lp.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
+
+                var diffs = new List<(Password local, CloudExport.Services.PasswordItem cloud)>();
+                foreach (var lp in local)
+                {
+                    var ci = cloudItems.FirstOrDefault(c => string.Equals(c.Name, lp.Name, StringComparison.InvariantCultureIgnoreCase));
+                    if (ci != null)
+                    {
+                        if (ci.Url != lp.Url || ci.Login != lp.Login || ci.Password != lp.SecurePassword.GetAsString() || ci.Description != lp.Description)
+                        {
+                            diffs.Add((lp, ci));
+                        }
+                    }
+                }
+
+                if (missingLocal.Count > 0)
+                {
+                    Console.WriteLine($"Adding {missingLocal.Count} items from cloud to local repository:");
+                    foreach (var ci in missingLocal)
+                    {
+                        var pwd = new Password
+                        {
+                            Name = ci.Name,
+                            Url = ci.Url,
+                            Login = ci.Login,
+                            Description = ci.Description
+                        };
+                        var ss = new SecureString();
+                        foreach (var ch in ci.Password)
+                        {
+                            ss.AppendChar(ch);
+                        }
+                        pwd.SecurePassword = ss;
+                        repository.Add(pwd);
+                        Console.WriteLine($"  {ci.Name}");
+                    }
+                    // save after adding
+                    repository.Save(repositoryFileName, keyDirectory, repositoryPassword);
+                }
+
+                if (missingCloud.Count > 0)
+                {
+                    Console.WriteLine($"Adding {missingCloud.Count} items from local to cloud:");
+                    foreach (var lp in missingCloud)
+                    {
+                        var ci = new CloudExport.Services.PasswordItem
+                        {
+                            Name = lp.Name,
+                            Url = lp.Url,
+                            Login = lp.Login,
+                            Description = lp.Description,
+                            Password = lp.SecurePassword.GetAsString()
+                        };
+                        cloudItems.Add(ci);
+                        Console.WriteLine($"  {lp.Name}");
+                    }
+                    CloudExport.CloudExport.SavePasswordItemsAsync(token, key, salt, cloudItems).GetAwaiter().GetResult();
+                }
+
+                if (diffs.Count > 0)
+                {
+                    Console.WriteLine("The following items differ between local and cloud (no changes made):");
+                    foreach (var (lp, ci) in diffs)
+                    {
+                        Console.WriteLine($"  {lp.Name}");
+                    }
+                }
+
+                if (!missingLocal.Any() && !missingCloud.Any() && !diffs.Any())
+                {
+                    Console.WriteLine("Local repository is already in sync with cloud.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Synchronization failed: {ex.Message}");
             }
         }
 

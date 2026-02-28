@@ -109,7 +109,8 @@ The console accepts full commands and several short aliases:
 | `Show-Repository`  |        | Show repository metadata        |
 | `Save-Repository`  |        | Persist changes                 |
 | `Close-Repository` |        | Close current repository        |
-| `Change-MasterPassword` |  | Change master password          |
+| `Change-MasterPassword` |   | Change master password          |
+| `Sync-Passwords`   |        | Synchronize with cloud copy     |
 | `Clear-Console`    |        | Clear the screen                |
 | `Show-Help`        | `help` | Display help text               |
 | `Show-License`     |        | Show GPL license text           |
@@ -123,8 +124,10 @@ name then hit `Tab`).
 
 - Keys are stored in a `Keys/` directory alongside the repository file. If
   the directory does not exist it will be created automatically.
-- The tool is intended for personal use and does not currently support
-  synchronization or sharing.
+- The tool now supports optional cloud synchronization using the
+  `Sync-Passwords` command; the command will connect with the cloud host
+  `www.stockfleth.eu`. A valid user account is required. Local-only
+  usage is still fully supported.
 
 ---
 
