@@ -1,6 +1,6 @@
 ﻿/*
     Myna Password Manager Console
-    Copyright (C) 2018-2025 Niels Stockfleth
+    Copyright (C) 2018-2026 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +21,13 @@ namespace MynaPasswordManagerConsole
     {
         public static void Main(string[] args)
         {
-            new ConsoleUI().Run();
+            var ui = new ConsoleUI();
+            if (args.Length > 0)
+            {
+                // treat first argument as repository filename and attempt to open
+                ui.OpenRepositoryFile(args[0]);
+            }
+            ui.Run();
         }
     }
 }

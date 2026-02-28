@@ -1,6 +1,6 @@
 /*
     Myna Password Manager Console
-    Copyright (C) 2018-2025 Niels Stockfleth
+    Copyright (C) 2018-2026 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,13 +51,32 @@ namespace MynaPasswordManagerConsole
             "Show-License"
         ];
 
+        // aliases map shortcut names to the canonical command
+        private static readonly Dictionary<string, string> Aliases =
+            new(StringComparer.InvariantCultureIgnoreCase)
+        {
+            { "ls", "list-account" },
+            { "quit", "exit-console" },
+            { "help", "show-help" },
+            { "cat", "show-account" }
+        };
+
+        // helper to return all tokens that may be tab‑completed (commands + aliases)
+        private static List<string> AllCommandsAndAliases()
+        {
+            var list = new List<string>(Commands);
+            foreach (var alias in Aliases.Keys)
+            {
+                list.Add(alias);
+            }
+            return list;
+        }
+
         public void Run()
         {
             ShowHelpCommand();
             var consoleReader = new ConsoleReader
             {
-                Background = ConsoleColor.DarkBlue,
-                Foreground = ConsoleColor.Yellow,
                 Expand = Expand
             };
             while (true)
@@ -80,13 +99,15 @@ namespace MynaPasswordManagerConsole
         {
             var ret = new List<string>();
             var result = Shell.Parse(cmdline);
-            var match = Commands;
+            // start with the full set of command/alias names
+            var match = AllCommandsAndAliases();
             var cmp = "";
             int pos = 0;
             if (result.Count > 0)
             {
                 cmp = result[0].Input.ToLowerInvariant();
                 pos = result[0].StartPosition;
+                // if the first token exactly matches a command (not an alias), don't show default completions
                 foreach (var c in Commands)
                 {
                     if (string.Equals(c, cmp, StringComparison.InvariantCultureIgnoreCase))
@@ -95,7 +116,13 @@ namespace MynaPasswordManagerConsole
                         break;
                     }
                 }
-                if (cmp == "show-account" || cmp == "edit-account" || cmp == "delete-account" || cmp == "open-url")
+                // resolve aliases for sub‑command logic
+                string cmdForArgs = cmp;
+                if (Aliases.TryGetValue(cmp, out var canonical))
+                {
+                    cmdForArgs = canonical;
+                }
+                if (cmdForArgs == "show-account" || cmdForArgs == "edit-account" || cmdForArgs == "delete-account" || cmdForArgs == "open-url")
                 {
                     if (repository != null && result.Count < 3 && cmdpos >= cmp.Length)
                     {
@@ -111,7 +138,7 @@ namespace MynaPasswordManagerConsole
                         }
                     }
                 }
-                if ((cmp == "open-repository" || cmp == "new-repository") && (
+                if ((cmdForArgs == "open-repository" || cmdForArgs == "new-repository") && (
                         result.Count < 3 ||
                         result.Count == 3 && // special case: './a b/'a should be expanded
                         result[1].InputToken == Shell.Token.STRING &&
@@ -232,7 +259,14 @@ namespace MynaPasswordManagerConsole
             var parseResult = Shell.Parse(consoleReader.Read());
             if (parseResult.Count > 0 && parseResult[0].InputToken == Shell.Token.ID)
             {
-                switch (parseResult[0].Input.ToLowerInvariant())
+                // map alias to canonical command name if necessary
+                var cmd = parseResult[0].Input.ToLowerInvariant();
+                if (Aliases.TryGetValue(cmd, out var canonical))
+                {
+                    cmd = canonical;
+                }
+
+                switch (cmd)
                 {
                     case "new-repository":
                         NewRepositoryCommand(parseResult);
@@ -299,8 +333,9 @@ namespace MynaPasswordManagerConsole
 
         private static void ShowHelpCommand()
         {
-            Console.WriteLine("Myna Password Manager Console version 10.0.1");
-            Console.WriteLine("Copyright (c) 2025 Niels Stockfleth. All rights reserved.");
+            Console.WriteLine("Myna Password Manager Console version 10.0.2");
+            Console.WriteLine("Usage: MynaPasswordManagerConsole [password-file]");
+            Console.WriteLine("Copyright (c) 2026 Niels Stockfleth. All rights reserved.");
             Console.WriteLine();
             Console.WriteLine("Commands:");
             Console.WriteLine("  Add-Account                       - Adds an account.");
@@ -309,8 +344,8 @@ namespace MynaPasswordManagerConsole
             Console.WriteLine("  Delete-Account <account>          - Deletes an account.");
             Console.WriteLine("  List-Account [<filter>]           - Lists accounts.");
             Console.WriteLine("  Open-URL <account>                - Opens the account's URL in a browser.");
-            Console.WriteLine("  New-Repository <file> [<keydir>]  - Creates a new password repository.");
-            Console.WriteLine("  Open-Repository <file> [<keydir>] - Opens a password repository.");
+            Console.WriteLine("  New-Repository <file> [<keydir>]  - Creates a new password repository (defaults keys to a 'Keys' subfolder).");
+            Console.WriteLine("  Open-Repository <file> [<keydir>] - Opens a password repository (defaults to a 'Keys' subfolder in the repository directory if omitted).");
             Console.WriteLine("  Show-Repository                   - Displays password repository information.");
             Console.WriteLine("  Edit-Repository                   - Edits password repository information.");
             Console.WriteLine("  Close-Repository                  - Closes the password repository.");
@@ -319,6 +354,12 @@ namespace MynaPasswordManagerConsole
             Console.WriteLine("  Clear-Console                     - Clears the console.");
             Console.WriteLine("  Exit-Console                      - Exits the program.");
             Console.WriteLine("  Show-Help                         - Displays this text.");
+            Console.WriteLine();
+            Console.WriteLine("Aliases:");
+            Console.WriteLine("  ls     -> List-Account");
+            Console.WriteLine("  quit   -> Exit-Console");
+            Console.WriteLine("  help   -> Show-Help");
+            Console.WriteLine("  cat    -> Show-Account");
             Console.WriteLine("  Show-License                      - Displays license information.");
         }
 
@@ -345,7 +386,14 @@ namespace MynaPasswordManagerConsole
             Console.Clear();
         }
 
+        // called by the console UI itself when the user types the command
         private void OpenRepositoryCommand(List<Shell.ParseResult> result)
+        {
+            OpenRepositoryInternal(result);
+        }
+
+        // reusable logic for opening a repository (exposed also via helper below)
+        private void OpenRepositoryInternal(List<Shell.ParseResult> result)
         {
             if (result.Count < 2)
             {
@@ -374,7 +422,23 @@ namespace MynaPasswordManagerConsole
             }
             else
             {
-                keyDirectory = Path.GetDirectoryName(repositoryFileName);
+                // default to a "Keys" subfolder beside the repository file
+                var repoDir = Path.GetDirectoryName(repositoryFileName);
+                if (string.IsNullOrEmpty(repoDir))
+                {
+                    repoDir = Directory.GetCurrentDirectory();
+                }
+                keyDirectory = Path.Combine(repoDir, "Keys");
+                // ensure the directory exists so read/write won't fail
+                try
+                {
+                    Directory.CreateDirectory(keyDirectory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create key directory '{keyDirectory}': {ex.Message}");
+                    return;
+                }
             }
             var cs = new ConsoleReader
             {
@@ -390,6 +454,23 @@ namespace MynaPasswordManagerConsole
             {
                 Console.WriteLine("Access denied.");
             }
+        }
+
+        /// <summary>
+        /// Public helper that can be invoked programmatically to open a repository
+        /// file without entering the console command manually.  Used by
+        /// <see cref="Program.Main"/> to support the optional filename argument.
+        /// </summary>
+        /// <param name="path">path to the repository file</param>
+        public void OpenRepositoryFile(string path)
+        {
+            // construct parse result equivalent to typing: Open-Repository <path>
+            var pr = new List<Shell.ParseResult>
+            {
+                new Shell.ParseResult(0, 0, Shell.Token.ID, "open-repository"),
+                new Shell.ParseResult(0, 0, Shell.Token.STRING, path)
+            };
+            OpenRepositoryInternal(pr);
         }
 
         private void ShowRepositoryCommand(List<Shell.ParseResult> result)
@@ -460,7 +541,22 @@ namespace MynaPasswordManagerConsole
             }
             else
             {
-                keyDirectory = Path.GetDirectoryName(repositoryFileName);
+                // default to a "Keys" subfolder beside the repository file
+                var repoDir = Path.GetDirectoryName(repositoryFileName);
+                if (string.IsNullOrEmpty(repoDir))
+                {
+                    repoDir = Directory.GetCurrentDirectory();
+                }
+                keyDirectory = Path.Combine(repoDir, "Keys");
+                try
+                {
+                    Directory.CreateDirectory(keyDirectory);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create key directory '{keyDirectory}': {ex.Message}");
+                    return;
+                }
             }
             var cr = new ConsoleReader
             {

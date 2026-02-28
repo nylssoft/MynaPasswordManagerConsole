@@ -1,16 +1,131 @@
-# MynaPasswordManagerConsole
+# Myna Password Manager Console
 
-Console based password manager for .NET Core that allows to manage passwords stored in a password
-repository.
+A lightweight console application written in .NET that lets you create, open and
+manipulate encrypted password repositories. The program stores credentials in
+an XML file, with each entry protected by a separate key file kept in a
+`Keys` subdirectory. It provides command history, tab‑completion, and a small
+set of intuitive commands and aliases for quick navigation.
 
-Use .NET 10.
+---
 
-Build and run:
+## Features
 
->cd <!project directory!>
->
->dotnet build
->
->dotnet run
-  
-See dotnet for further details.
+- **Create, open, save, and close** password repositories
+- **Add, edit, delete and list** account entries
+- **Secure master password** with per-account keys and AES encryption
+- **Command aliases** (`ls`, `quit`, `help`, `cat`) and tab-completion
+- **Optional CLI argument** to open a repository immediately
+- Simple **import/export** support via copy/paste (not shown here)
+
+
+## Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/) (the project targets `net10.0`)
+- macOS, Linux or Windows with a terminal
+
+
+## Building
+
+```bash
+cd /path/to/MynaPasswordManagerConsole
+dotnet build
+```
+
+The build output lands under `bin/Debug/net10.0` (or `bin/Release/...` when published).
+
+
+## Running
+
+### Interactive mode
+
+Start the console and type commands as needed:
+
+```bash
+dotnet run --project MynaPasswordManagerConsole.csproj
+```
+
+or after publishing:
+
+```bash
+dotnet bin/Release/net10.0/publish/MynaPasswordManagerConsole.dll
+```
+
+### Open a repository on startup
+
+Supply an optional password file name as the first argument; the UI will
+prompt for the master password and open it automatically.
+
+```bash
+# launch and immediately open "myrepo.myna"
+./run.sh myrepo.myna
+```
+
+### Example session
+
+```
+$ ./run.sh
+Usage: MynaPasswordManagerConsole [password-file]
+# create new repository
+New-Repository passwords.myna
+Name: Personal
+Description: Logins
+Master Password: ******
+Confirm Master Password: ******
+Repository created.
+# add an account
+Add-Account
+Name: GitHub
+URL: https://github.com
+Login: nyls
+Password: ******
+# list entries (alias)
+ls
+GitHub
+# show details (alias)
+cat GitHub
+Name: GitHub
+URL: https://github.com
+Login: nyls
+Password: ******
+# exit (alias)
+quit
+```
+
+
+## Commands & aliases
+
+The console accepts full commands and several short aliases:
+
+| Command            | Alias  | Description                     |
+|--------------------|--------|---------------------------------|
+| `List-Account`     | `ls`   | Show all account names          |
+| `Add-Account`      |        | Create a new account entry      |
+| `Edit-Account`     |        | Modify an existing entry        |
+| `Delete-Account`   |        | Remove an entry                 |
+| `Show-Account`     | `cat`  | Display account details         |
+| `Open-URL`         |        | Open the account's URL/browser  |
+| `New-Repository`   |        | Create a new repository file    |
+| `Open-Repository`  |        | Open an existing repository     |
+| `Show-Repository`  |        | Show repository metadata        |
+| `Save-Repository`  |        | Persist changes                 |
+| `Close-Repository` |        | Close current repository        |
+| `Change-MasterPassword` |  | Change master password          |
+| `Clear-Console`    |        | Clear the screen                |
+| `Show-Help`        | `help` | Display help text               |
+| `Show-License`     |        | Show GPL license text           |
+| `Exit-Console`     | `quit` | Exit application                |
+
+Commands support tab completion for names and file paths (type part of
+name then hit `Tab`).
+
+
+## Notes
+
+- Keys are stored in a `Keys/` directory alongside the repository file. If
+  the directory does not exist it will be created automatically.
+- The tool is intended for personal use and does not currently support
+  synchronization or sharing.
+
+---
+
+Feel free to fork, submit issues or patches! See `LICENSE` for licensing info.

@@ -1,6 +1,6 @@
 ﻿/*
     Myna Password Manager Console
-    Copyright (C) 2018-2025 Niels Stockfleth
+    Copyright (C) 2018-2026 Niels Stockfleth
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,13 +25,7 @@ namespace MynaPasswordManagerConsole
     public class ConsoleReader
     {
 
-        private ConsoleColor originalBackground;
-
-        private ConsoleColor originalForeground;
-
-        public ConsoleColor Foreground { get; set; } = Console.ForegroundColor;
-
-        public ConsoleColor Background { get; set; } = Console.BackgroundColor;
+        // color handling removed: always use the console's existing colors
 
         public string Prefix { get; set; } = "$>";
 
@@ -64,11 +58,8 @@ namespace MynaPasswordManagerConsole
 
         private StringBuilder ReadLine(bool secure, string defaultValue = "")
         {
-            originalForeground = Console.ForegroundColor;
-            originalBackground = Console.BackgroundColor;
+            // simply write the prompt; no color manipulation
             Console.Write(Prefix);
-            Console.ForegroundColor = Foreground;
-            Console.BackgroundColor = Background;
             var txt = new StringBuilder();
             int pos = 0;
             if (!string.IsNullOrEmpty(defaultValue))
@@ -87,8 +78,7 @@ namespace MynaPasswordManagerConsole
                 var cki = Console.ReadKey(true);
                 if (cki.Key == ConsoleKey.Enter)
                 {
-                    Console.ForegroundColor = originalForeground;
-                    Console.BackgroundColor = originalBackground;
+                    // move to next line
                     Console.WriteLine();
                     return txt;
                 }
@@ -240,13 +230,11 @@ namespace MynaPasswordManagerConsole
         private void RemoveN(int len, int n = -1)
         {
             Console.CursorLeft = len + Prefix.Length;
-            Console.BackgroundColor = originalBackground;
             if (n == -1) n = len;
             for (; n > 0; n--)
             {
                 Console.Write("\b \b");
             }
-            Console.BackgroundColor = Background;
         }
 
         private static int PutChar(StringBuilder txt, int pos, char c, bool insertMode)
