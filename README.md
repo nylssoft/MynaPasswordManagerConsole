@@ -89,6 +89,7 @@ Login: nyls
 Password: ******
 # open URL (alias)
 go GitHub
+# clear screen (alias)
 clear
 # sync repository (alias)
 sync
